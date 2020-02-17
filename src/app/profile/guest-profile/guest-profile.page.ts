@@ -1,5 +1,6 @@
+import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
 import { TranslateService } from '@ngx-translate/core';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Events, ToastController } from '@ionic/angular';
 import {
   Framework,
@@ -20,6 +21,7 @@ import { TelemetryGeneratorService } from '@app/services/telemetry-generator.ser
 import { AppHeaderService } from '@app/services/app-header.service';
 import { PageId, Environment, InteractType, InteractSubtype } from '@app/services/telemetry-constants';
 import { ProfileConstants, RouterLinks, PreferenceKey } from '@app/app/app.constant';
+
 
 @Component({
   selector: 'app-guest-profile',
@@ -43,6 +45,9 @@ export class GuestProfilePage implements OnInit {
   headerObservable: any;
   isUpgradePopoverShown = false;
   deviceLocation: any;
+  isPermissionAvailable = false;
+  storedResult = [];
+  isRecording = false;
 
   constructor(
     @Inject('PROFILE_SERVICE') private profileService: ProfileService,
@@ -57,7 +62,9 @@ export class GuestProfilePage implements OnInit {
     private headerService: AppHeaderService,
     public toastController: ToastController,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private speechRecognition: SpeechRecognition,
+    private changeDetector: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -156,7 +163,7 @@ export class GuestProfilePage implements OnInit {
       InteractType.TOUCH,
       InteractSubtype.EDIT_CLICKED,
       Environment.HOME,
-      PageId.GUEST_PROFILE,undefined,values);
+      PageId.GUEST_PROFILE, undefined, values);
     this.router.navigate([RouterLinks.GUEST_EDIT], navigationExtras);
   }
 
@@ -263,6 +270,60 @@ export class GuestProfilePage implements OnInit {
       }
     };
     this.router.navigate([RouterLinks.DISTRICT_MAPPING], navigationExtras);
+  }
+
+  startRecording() {
+    this.checkPermission();
+    if (this.isPermissionAvailable) {
+      this.isRecording = true;
+      this.speechRecognition.startListening().subscribe(matches => {
+        this.storedResult = matches;
+        this.changeDetector.detectChanges();
+      });
+    }
+  }
+
+  // stopRecording() {
+  //   this.speechRecognition.stopListening().then(() => {
+  //     this.isRecording = false;
+  //   });
+  //   alert(this.showRecordedItems());
+  // }
+
+  checkPermission() {
+    this.speechRecognition.hasPermission()
+      .then((hasPermission: boolean) => {
+        if (!hasPermission) {
+          this.isPermissionAvailable = false;
+          this.speechRecognition.requestPermission();
+        } else {
+          this.isPermissionAvailable = true;
+        }
+      });
+  }
+
+  // toggleRecording() {
+  //   if (!this.isRecording) {
+  //     this.startRecording();
+  //   } else {
+  //     this.stopRecording();
+  //   }
+  // }
+
+  showRecordedItems() {
+    const result = [];
+    this.storedResult.forEach(element => {
+      result.push(element);
+    });
+    result.reduce((acc, i) => {
+      if (acc.includes(i)) {
+        acc.push(i);
+      }
+      return acc;
+    }, []);
+
+    alert(result);
+
   }
 
 }

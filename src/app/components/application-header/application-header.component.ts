@@ -10,7 +10,9 @@ import { AppVersion } from '@ionic-native/app-version/ngx';
 import { Subscription } from 'rxjs/Subscription';
 import { TranslateService } from '@ngx-translate/core';
 import { NavigationExtras, Router, RouterLink } from '@angular/router';
-import {combineLatest} from 'rxjs';
+import { combineLatest } from 'rxjs';
+import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
+import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
 @Component({
   selector: 'app-application-header',
@@ -36,7 +38,10 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
   networkSubscription: Subscription;
   isUnreadNotification: boolean = false;
   menuSide = 'left';
-
+  isPermissionAvailable = true;
+  storedResult = [];
+  eventName: string;
+  volumeKeypressCount: number;
   constructor(
     @Inject('SHARED_PREFERENCES') private preference: SharedPreferences,
     @Inject('DOWNLOAD_SERVICE') private downloadService: DownloadService,
@@ -55,7 +60,9 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
     private router: Router,
     private ngZone: NgZone,
     private telemetryGeneratorService: TelemetryGeneratorService,
-    private activePageService: ActivePageService
+    private activePageService: ActivePageService,
+    private speechRecognition: SpeechRecognition,
+    private textToSpeech: TextToSpeech
   ) {
     this.setLanguageValue();
     this.events.subscribe('onAfterLanguageChange:update', (res) => {
@@ -67,6 +74,9 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    window.addEventListener('volumebuttonslistener', this.onVolumeButtonsListener.bind(this), false);
+    this.eventName = this.activePageService.computePageId(this.router.url);
+    console.log('this.eventName', this.eventName);
     this.setAppLogo();
     this.setAppVersion();
     this.events.subscribe('user-profile-changed', () => {
@@ -102,6 +112,20 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
     });
   }
 
+  onVolumeButtonsListener() {
+    if (isNaN(this.volumeKeypressCount)) {
+      this.volumeKeypressCount = 0;
+    }
+    this.volumeKeypressCount = this.volumeKeypressCount + 1;
+    if (this.volumeKeypressCount === 2) {
+      this.startRecording();
+    }
+    setTimeout(() => {
+      console.log('resetting');
+      this.volumeKeypressCount = 0;
+    }, 1500);
+  }
+
   setAppVersion(): any {
     this.utilityService.getBuildConfigValue(GenericAppConfig.VERSION_NAME)
       .then(vName => {
@@ -135,7 +159,7 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
     combineLatest([
       this.downloadService.getActiveDownloadRequests(),
       this.eventsBusService.events(EventNamespace.DOWNLOADS)
-          .filter((event) => event.type === DownloadEventType.PROGRESS)
+        .filter((event) => event.type === DownloadEventType.PROGRESS)
     ]).subscribe(([list, event]) => {
       const downloadEvent = event as DownloadProgress;
       this.downloadProgressMap[downloadEvent.payload.identifier] = downloadEvent.payload.progress;
@@ -229,4 +253,33 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
     });
   }
 
+  startRecording() {
+
+    // library `courses`
+    this.eventName = this.activePageService.computePageId(this.router.url);
+    console.log('this.eventName', this.eventName );
+    // this.checkPermission();
+    if (this.isPermissionAvailable) {
+      this.speechRecognition.startListening().subscribe(matches => {
+        this.storedResult = matches;
+        this.changeDetectionRef.detectChanges();
+        console.log('subscription started');
+        this.headerEvents.emit({ name: 'voiceSearch-' + this.eventName, event: this.storedResult });
+      }, (error) => {
+        console.log('error detected', error);
+      });
+    }
+  }
+
+  checkPermission() {
+    this.speechRecognition.hasPermission()
+      .then((hasPermission: boolean) => {
+        if (!hasPermission) {
+          this.isPermissionAvailable = false;
+          this.speechRecognition.requestPermission();
+        } else {
+          this.isPermissionAvailable = true;
+        }
+      });
+  }
 }

@@ -79,6 +79,10 @@
         (click)="emitEvent($event, 'more');" style="font-size: 1.8rem;">
         <ion-icon md="md-more" float-end></ion-icon>
       </ion-button>
+      <!-- For speech recognition icon-->
+      <ion-button icon-only *ngIf="headerConfig?.actionButtons?.indexOf('voiceSearch') >=0" (click)="startRecording()">
+        <ion-icon name="microphone"></ion-icon>
+      </ion-button>
     </ion-buttons>
 
   </ion-toolbar>

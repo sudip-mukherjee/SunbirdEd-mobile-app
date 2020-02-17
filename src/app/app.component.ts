@@ -1,6 +1,6 @@
 import { Router, NavigationExtras, NavigationStart, Event } from '@angular/router';
 import { Location } from '@angular/common';
-import { AfterViewInit, Component, Inject, NgZone, OnInit, EventEmitter, ViewChild } from '@angular/core';
+import { Output, AfterViewInit, Component, Inject, NgZone, OnInit, EventEmitter, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { Events, Platform, IonRouterOutlet, MenuController } from '@ionic/angular';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { TranslateService } from '@ngx-translate/core';
@@ -39,6 +39,8 @@ import { NotificationService as localNotification } from '@app/services/notifica
 import { RouterLinks } from './app.constant';
 import { TncUpdateHandlerService } from '@app/services/handlers/tnc-update-handler.service';
 import { NetworkAvailabilityToastService } from '@app/services/network-availability-toast/network-availability-toast.service';
+import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
+import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
 @Component({
   selector: 'app-root',
@@ -62,7 +64,12 @@ export class AppComponent implements OnInit, AfterViewInit {
   selectedLanguage: string;
   appName: string;
   appVersion: string;
+  isPermissionAvailable = true;
+  storedResult = [];
   @ViewChild('mainContent', { read: IonRouterOutlet }) routerOutlet: IonRouterOutlet;
+  @Output() headerEvents = new EventEmitter();
+  volumeKeypressCount: number;
+  eventName: string;
 
   constructor(
     @Inject('TELEMETRY_SERVICE') private telemetryService: TelemetryService,
@@ -94,7 +101,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     private location: Location,
     private menuCtrl: MenuController,
     private networkAvailability: NetworkAvailabilityToastService,
-    private splashScreenService: SplashScreenService
+    private splashScreenService: SplashScreenService,
+    private speechRecognition: SpeechRecognition,
+    private textToSpeech: TextToSpeech,
+    private changeDetectionRef: ChangeDetectorRef,
   ) {
     this.telemetryAutoSync = this.telemetryService.autoSync;
     platform.ready().then(async () => {
@@ -115,7 +125,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.showAppWalkThroughScreen();
       this.startOpenrapDiscovery();
       this.saveDefaultSyncSetting();
-      this.checkAppUpdateAvailable();
+      // this.checkAppUpdateAvailable();
       this.makeEntryInSupportFolder();
       await this.getSelectedLanguage();
       await this.getDeviceProfile();
@@ -134,34 +144,48 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.getUtmParameter();
       this.checkForCodeUpdates();
       this.checkAndroidWebViewVersion();
+      // this.volumeKeypressCount = 0;
     });
+  }
+  onVolumeButtonsListener() {
+    if (isNaN(this.volumeKeypressCount)) {
+      this.volumeKeypressCount = 0;
+    }
+    this.volumeKeypressCount = this.volumeKeypressCount + 1;
+    if (this.volumeKeypressCount === 2) {
+      this.startRecording();
+    }
+    setTimeout(() => {
+      console.log('resetting');
+      this.volumeKeypressCount = 0;
+    }, 1500);
   }
 
   checkAndroidWebViewVersion() {
     var that = this;
     plugins['webViewChecker'].getCurrentWebViewPackageInfo()
-    .then(function(packageInfo) {
-      that.formAndFrameworkUtilService.getWebviewConfig().then(function(webviewVersion) {
-        if (parseInt(packageInfo.versionName.split('.')[0], 10) <= webviewVersion) {
-          document.getElementById('update-webview-container').style.display = 'block';
-          that.telemetryGeneratorService.generateImpressionTelemetry(
-            ImpressionType.VIEW, '',
-            PageId.UPDATE_WEBVIEW_POPUP,
-            Environment.HOME);
-        }
-      }).catch(function(err) {
-        if (parseInt(packageInfo.versionName.split('.')[0], 10) <= 54) {
-          document.getElementById('update-webview-container').style.display = 'block';
-        }
-      });
-    })
-    .catch(function(error) { });
+      .then(function (packageInfo) {
+        that.formAndFrameworkUtilService.getWebviewConfig().then(function (webviewVersion) {
+          if (parseInt(packageInfo.versionName.split('.')[0], 10) <= webviewVersion) {
+            document.getElementById('update-webview-container').style.display = 'block';
+            that.telemetryGeneratorService.generateImpressionTelemetry(
+              ImpressionType.VIEW, '',
+              PageId.UPDATE_WEBVIEW_POPUP,
+              Environment.HOME);
+          }
+        }).catch(function (err) {
+          if (parseInt(packageInfo.versionName.split('.')[0], 10) <= 54) {
+            document.getElementById('update-webview-container').style.display = 'block';
+          }
+        });
+      })
+      .catch(function (error) { });
   }
 
   openPlaystore() {
     plugins['webViewChecker'].openGooglePlayPage()
-    .then(function() { })
-    .catch(function(error) { });
+      .then(function () { })
+      .catch(function (error) { });
 
     this.telemetryGeneratorService.generateInteractTelemetry(
       InteractType.TOUCH,
@@ -195,8 +219,8 @@ export class AppComponent implements OnInit, AfterViewInit {
         codePush.sync((status => {
           this.syncStatus(status);
         }), {
-          deploymentKey
-        }, this.downloadProgress);
+            deploymentKey
+          }, this.downloadProgress);
       } else {
         this.telemetryGeneratorService.generateInteractTelemetry(InteractType.OTHER, InteractSubtype.HOTCODE_PUSH_KEY_NOT_DEFINED,
           Environment.HOME, PageId.HOME);
@@ -572,12 +596,12 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   private autoSyncTelemetry() {
     this.telemetryAutoSync.start(30 * 1000).pipe(
-        mergeMap(() => {
-          return combineLatest([
-            this.platform.pause.pipe(tap(() => this.telemetryAutoSync.pause())),
-            this.platform.resume.pipe(tap(() => this.telemetryAutoSync.continue()))
-          ]);
-        })
+      mergeMap(() => {
+        return combineLatest([
+          this.platform.pause.pipe(tap(() => this.telemetryAutoSync.pause())),
+          this.platform.resume.pipe(tap(() => this.telemetryAutoSync.continue()))
+        ]);
+      })
     ).subscribe();
   }
 
@@ -779,4 +803,28 @@ export class AppComponent implements OnInit, AfterViewInit {
       });
     }
   }
+
+  startRecording() {
+    this.eventName = this.activePageService.computePageId(this.router.url);
+    this.speechRecognition.startListening().subscribe(matches => {
+      this.storedResult = matches;
+      this.changeDetectionRef.detectChanges();
+      console.log('subscription started');
+      this.headerEvents.emit({ name: 'voiceSearch-' + this.eventName, event: this.storedResult });
+    }, (error) => {
+      console.log('error detected', error);
+    });
+  }
+
+  /* checkPermission() {
+    this.speechRecognition.hasPermission()
+      .then((hasPermission: boolean) => {
+        if (!hasPermission) {
+          this.isPermissionAvailable = false;
+          this.speechRecognition.requestPermission();
+        } else {
+          this.isPermissionAvailable = true;
+        }
+      });
+  }*/
 }

@@ -500,3 +500,14 @@ export class RouterLinks {
 export class LibraryCardTypes {
     public static readonly QRCODE_RESULT = 'qrcode_result';
 }
+
+export class VoiceSearchConstants {
+    public static readonly searchConstants = {
+        subject: [
+            'biology', 'mathematics', 'english', 'chemistry'
+        ],
+        mappedContentId: [
+            'first', 'second',  'third', 'fourth'
+        ]
+    };
+}

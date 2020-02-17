@@ -19,6 +19,10 @@
       <ion-button icon-only (click)="showFilter()" *ngIf="filterIcon">
         <img style="width: 18px; height: 18px" src="./assets/imgs/ic_action_filter.svg">
       </ion-button>
+      <!-- Voice search-->
+      <ion-button icon-only *ngIf="headerConfig?.actionButtons?.indexOf('voiceSearch') >=0" (click)="startRecording()">
+          <ion-icon name="microphone"></ion-icon>
+        </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -193,7 +197,7 @@
       </div>
       <div class="sb-card-container sb-card-textbook-container">
         <app-text-book-card class="tb-border-btm" *ngFor="let content of searchContentResult; let i = index; let last = last"
-          (click)="openContent(undefined, content,i)" [content]="content" [layoutName]="layoutName"></app-text-book-card>
+          (click)="openContent(undefined, content,i)" [content]="content" [layoutName]="layoutName" id={{i}}></app-text-book-card>
       </div>
     </div>
     <div class="empty-search-result" *ngIf="!showLoader && showEmptyMessage" text-center padding-top>

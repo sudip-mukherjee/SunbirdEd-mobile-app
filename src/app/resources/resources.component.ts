@@ -648,12 +648,12 @@ export class ResourcesComponent implements OnInit, AfterViewInit {
 
   ionViewWillEnter() {
     this.events.subscribe('update_header', () => {
-      this.headerService.showHeaderWithHomeButton(['search', 'download', 'notification']);
+      this.headerService.showHeaderWithHomeButton(['search', 'download', 'notification', 'voiceSearch']);
     });
     this.headerObservable = this.headerService.headerEventEmitted$.subscribe(eventName => {
       this.handleHeaderEvents(eventName);
     });
-    this.headerService.showHeaderWithHomeButton(['search', 'download', 'notification']);
+    this.headerService.showHeaderWithHomeButton(['search', 'download', 'notification', 'voiceSearch']);
 
     this.getCategoryData();
 
@@ -725,6 +725,19 @@ export class ResourcesComponent implements OnInit, AfterViewInit {
       state: {
         contentType: contentTypes,
         source: PageId.LIBRARY
+      }
+    });
+  }
+
+  async voiceSearch($event) {
+    console.log('$event', $event);
+    const contentTypes = await this.formAndFrameworkUtilService.getSupportedContentFilterConfig(
+      ContentFilterConfig.NAME_LIBRARY);
+    this.router.navigate([RouterLinks.SEARCH], {
+      state: {
+        contentType: contentTypes,
+        source: PageId.LIBRARY,
+        searchTexts: $event.event
       }
     });
   }
@@ -982,6 +995,9 @@ export class ResourcesComponent implements OnInit, AfterViewInit {
         break;
       case 'notification':
         this.redirectToNotifications();
+        break;
+      case 'voiceSearch-library':
+        this.voiceSearch($event);
         break;
       default: console.warn('Use Proper Event name');
     }

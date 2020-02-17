@@ -141,12 +141,12 @@ export class CoursesPage implements OnInit {
   ionViewWillEnter() {
     this.isVisible = true;
     this.events.subscribe('update_header', () => {
-      this.headerService.showHeaderWithHomeButton(['search', 'filter', 'download']);
+      this.headerService.showHeaderWithHomeButton(['search', 'filter', 'download', 'voiceSearch']);
     });
     this.headerObservable = this.headerService.headerEventEmitted$.subscribe(eventName => {
       this.handleHeaderEvents(eventName);
     });
-    this.headerService.showHeaderWithHomeButton(['search', 'filter', 'download']);
+    this.headerService.showHeaderWithHomeButton(['search', 'filter', 'download', 'voiceSearch']);
   }
 
   ionViewDidEnter() {
@@ -510,6 +510,22 @@ export class CoursesPage implements OnInit {
     });
   }
 
+  async voiceSearch($event) {
+    const contentType = await this.formAndFrameworkUtilService.getSupportedContentFilterConfig(
+      ContentFilterConfig.NAME_COURSE);
+    this.router.navigate([RouterLinks.SEARCH], {
+      state: {
+        contentType,
+        source: PageId.COURSES,
+        enrolledCourses: this.enrolledCourses,
+        guestUser: this.guestUser,
+        userId: this.userId,
+        searchTexts: $event.event
+      }
+    });
+
+  }
+
   showFilter() {
     if(this.isFilterOpen){
       return;
@@ -828,6 +844,9 @@ export class CoursesPage implements OnInit {
         break;
       case 'download':
         this.redirectToActivedownloads();
+        break;
+      case 'voiceSearch-courses':
+        this.voiceSearch($event);
         break;
     }
   }

@@ -1,4 +1,4 @@
-import { Component, Inject, NgZone, OnDestroy, ViewChild, ChangeDetectorRef, OnInit, AfterViewInit } from '@angular/core';
+import { Component, Inject, NgZone, OnDestroy, ViewChild, ChangeDetectorRef, OnInit, AfterViewInit, Output, EventEmitter } from '@angular/core';
 import { Router, NavigationExtras } from '@angular/router';
 import { Events, Platform, PopoverController, IonContent, NavController } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
@@ -27,7 +27,8 @@ import {
   BatchConstants,
   RouterLinks, AudienceFilter,
   ContentType, MimeType, Search, ContentCard,
-  ContentFilterConfig
+  ContentFilterConfig,
+  VoiceSearchConstants
 } from '@app/app/app.constant';
 import { AppGlobalService } from '@app/services/app-global-service.service';
 import { FormAndFrameworkUtilService } from '@app/services/formandframeworkutil.service';
@@ -44,6 +45,7 @@ import { from } from 'rxjs';
 import { EnrollmentDetailsComponent } from '../components/enrollment-details/enrollment-details.component';
 import { ContentUtil } from '@app/util/content-util';
 import { LibraryCardTypes } from '@project-sunbird/common-consumption';
+import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
 declare const cordova;
 @Component({
   selector: 'app-search',
@@ -102,8 +104,11 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   isProfileUpdated: boolean;
   isQrCodeLinkToContent: any;
   LibraryCardTypes = LibraryCardTypes;
+  searchTexts: [];
+  storedResult = [];
 
   @ViewChild('contentView') contentView: IonContent;
+  @Output() headerEvents = new EventEmitter();
   constructor(
     @Inject('CONTENT_SERVICE') private contentService: ContentService,
     @Inject('PAGE_ASSEMBLE_SERVICE') private pageService: PageAssembleService,
@@ -129,10 +134,12 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
     private popoverCtrl: PopoverController,
     private location: Location,
     private router: Router,
-    private navCtrl: NavController
+    private navCtrl: NavController,
+    private speechRecognition: SpeechRecognition
   ) {
 
     const extras = this.router.getCurrentNavigation().extras.state;
+    this.searchTexts = this.router.getCurrentNavigation().extras.state.searchTexts;
 
     if (extras) {
       this.dialCode = extras.dialCode;
@@ -154,6 +161,9 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.searchTexts) {
+      this.processSearchData(this.searchTexts);
+    }
     this.getAppName();
   }
 
@@ -715,7 +725,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
     this.isEmptyResult = false;
   }
 
-  handleSearch() {
+  handleSearch(searchQuery?) {
     this.scrollToTop();
     if (this.searchKeywords.length < 3) {
       return;
@@ -732,7 +742,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
 
     const contentSearchRequest: ContentSearchCriteria = {
       searchType: SearchType.SEARCH,
-      query: this.searchKeywords,
+      query: this.searchKeywords || searchQuery,
       contentTypes: this.contentType,
       facets: Search.FACETS,
       audience: this.audienceFilter,
@@ -769,7 +779,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
         this.zone.run(() => {
           this.responseData = response;
           if (response) {
-
+            (window as any).cordova.plugins.Keyboard.close();
             this.addCorRelation(response.responseMessageId, 'API');
             this.searchContentResult = response.contentDataList;
             this.isEmptyResult = !this.searchContentResult || this.searchContentResult.length === 0;
@@ -793,6 +803,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
         });
       }).catch(() => {
         this.zone.run(() => {
+          (window as any).cordova.plugins.Keyboard.close();
           this.showLoader = false;
           if (!this.showLoader) {
             this.telemetryGeneratorService.generateEndSheenAnimationTelemetry(this.source);
@@ -874,7 +885,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
     }
     if (anyOpenBatch || !retiredBatches.length) {
       // open the batch directly
-      await  this.showContentDetails(content, true);
+      await this.showContentDetails(content, true);
     } else if (retiredBatches.length) {
       await this.navigateToBatchListPopup(content, layoutName, retiredBatches);
     }
@@ -903,11 +914,11 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
               this.batches = res;
               if (this.batches.length) {
                 this.batches.forEach((batch, key) => {
-                    if (batch.status === 1) {
-                      ongoingBatches.push(batch);
-                    } else {
-                      upcommingBatches.push(batch);
-                    }
+                  if (batch.status === 1) {
+                    ongoingBatches.push(batch);
+                  } else {
+                    upcommingBatches.push(batch);
+                  }
                 });
                 this.telemetryGeneratorService.generateInteractTelemetry(InteractType.TOUCH,
                   'ongoing-batch-popup',
@@ -1362,64 +1373,64 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   subscribeSdkEvent() {
     this.eventSubscription = this.eventsBusService.events()
       .subscribe((event: EventsBusEvent) => {
-      this.zone.run(() => {
-        if (event.type === DownloadEventType.PROGRESS && event.payload.progress) {
-          const downloadEvent = event as DownloadProgress;
-          this.downloadProgress =  downloadEvent.payload.progress === -1 ? 0 : downloadEvent.payload.progress;
-          this.loadingDisplayText = this.commonUtilService.translateMessage('LOADING_CONTENT') + ' ' + this.downloadProgress + ' %';
+        this.zone.run(() => {
+          if (event.type === DownloadEventType.PROGRESS && event.payload.progress) {
+            const downloadEvent = event as DownloadProgress;
+            this.downloadProgress = downloadEvent.payload.progress === -1 ? 0 : downloadEvent.payload.progress;
+            this.loadingDisplayText = this.commonUtilService.translateMessage('LOADING_CONTENT') + ' ' + this.downloadProgress + ' %';
 
-          if (this.downloadProgress === 100) {
-            // this.showLoading = false;
-            this.loadingDisplayText = this.commonUtilService.translateMessage('LOADING_CONTENT') + ' ';
-          }
-        }
-
-        if (event.type === ContentEventType.IMPORT_PROGRESS) {
-          const totalCountMsg = Math.floor((event.payload.currentCount / event.payload.totalCount) * 100) +
-          '% (' + event.payload.currentCount + ' / ' + event.payload.totalCount + ')';
-          this.loadingDisplayText = this.commonUtilService.translateMessage('EXTRACTING_CONTENT', totalCountMsg);
-          if (event.payload.currentCount === event.payload.totalCount) {
-            let timer = 30;
-            const interval = setInterval(() => {
-              this.loadingDisplayText = `Getting things ready in ${timer--}  seconds`;
-              if (timer === 0) {
-                this.loadingDisplayText = 'Getting things ready';
-                clearInterval(interval);
-              }
-            }, 1000);
-          }
-        }
-        // if (event.payload && event.payload.status === 'IMPORT_COMPLETED' && event.type === 'contentImport') {
-        if (event.payload && event.type === ContentEventType.IMPORT_COMPLETED) {
-          if (this.queuedIdentifiers.length && this.isDownloadStarted) {
-            if (this.queuedIdentifiers.includes(event.payload.contentId)) {
-              this.currentCount++;
+            if (this.downloadProgress === 100) {
+              // this.showLoading = false;
+              this.loadingDisplayText = this.commonUtilService.translateMessage('LOADING_CONTENT') + ' ';
             }
-            if (this.queuedIdentifiers.length === this.currentCount) {
-              this.showLoading = false;
-              this.telemetryGeneratorService.generateInteractTelemetry(InteractType.OTHER,
-                InteractSubtype.LOADING_SPINE_COMPLETED,
-                this.source === PageId.USER_TYPE_SELECTION ? Environment.ONBOARDING : Environment.HOME,
-                PageId.DIAL_SEARCH,
-                undefined,
-                undefined,
-                undefined,
-                this.corRelationList
-              );
-              this.showContentDetails(this.childContent);
+          }
+
+          if (event.type === ContentEventType.IMPORT_PROGRESS) {
+            const totalCountMsg = Math.floor((event.payload.currentCount / event.payload.totalCount) * 100) +
+              '% (' + event.payload.currentCount + ' / ' + event.payload.totalCount + ')';
+            this.loadingDisplayText = this.commonUtilService.translateMessage('EXTRACTING_CONTENT', totalCountMsg);
+            if (event.payload.currentCount === event.payload.totalCount) {
+              let timer = 30;
+              const interval = setInterval(() => {
+                this.loadingDisplayText = `Getting things ready in ${timer--}  seconds`;
+                if (timer === 0) {
+                  this.loadingDisplayText = 'Getting things ready';
+                  clearInterval(interval);
+                }
+              }, 1000);
+            }
+          }
+          // if (event.payload && event.payload.status === 'IMPORT_COMPLETED' && event.type === 'contentImport') {
+          if (event.payload && event.type === ContentEventType.IMPORT_COMPLETED) {
+            if (this.queuedIdentifiers.length && this.isDownloadStarted) {
+              if (this.queuedIdentifiers.includes(event.payload.contentId)) {
+                this.currentCount++;
+              }
+              if (this.queuedIdentifiers.length === this.currentCount) {
+                this.showLoading = false;
+                this.telemetryGeneratorService.generateInteractTelemetry(InteractType.OTHER,
+                  InteractSubtype.LOADING_SPINE_COMPLETED,
+                  this.source === PageId.USER_TYPE_SELECTION ? Environment.ONBOARDING : Environment.HOME,
+                  PageId.DIAL_SEARCH,
+                  undefined,
+                  undefined,
+                  undefined,
+                  this.corRelationList
+                );
+                this.showContentDetails(this.childContent);
+                this.events.publish('savedResources:update', {
+                  update: true
+                });
+              }
+            } else {
               this.events.publish('savedResources:update', {
                 update: true
               });
             }
-          } else {
-            this.events.publish('savedResources:update', {
-              update: true
-            });
           }
-        }
 
-      });
-    }) as any;
+        });
+      }) as any;
   }
 
   /**
@@ -1552,14 +1563,14 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
 
   goBack() {
     this.telemetryGeneratorService.generateBackClickedTelemetry(ImpressionType.SEARCH,
-          Environment.HOME, true, undefined, this.corRelationList);
+      Environment.HOME, true, undefined, this.corRelationList);
     this.navCtrl.pop();
   }
 
   getContentCount(resultlist) {
     let totalCount = 0;
     if (resultlist.dialCodeResult.length) {
-      for (let i = 0; i < resultlist.dialCodeResult.length; i++){
+      for (let i = 0; i < resultlist.dialCodeResult.length; i++) {
         if (resultlist.dialCodeResult[i].content && resultlist.dialCodeResult[i].content.length) {
           totalCount += resultlist.dialCodeResult[i].content.length;
         }
@@ -1569,5 +1580,42 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
       totalCount += resultlist.dialCodeContentResult.length;
     }
     return totalCount;
+  }
+
+  processSearchData(searchData) {
+    let searchQuery = '';
+    VoiceSearchConstants.searchConstants.subject.forEach(data => {
+      if (searchData[0].includes(data)) {
+        searchQuery = searchQuery + data;
+        this.searchKeywords = searchQuery;
+      }
+    });
+    console.log('searchQuery', searchQuery);
+    this.handleSearch(searchQuery);
+    (window as any).cordova.plugins.Keyboard.close();
+  }
+
+  startRecording() {
+    // this.checkPermission();
+      this.speechRecognition.startListening().subscribe(matches => {
+        this.storedResult = matches;
+        this.changeDetectionRef.detectChanges();
+        console.log('subscription started');
+        console.log('this.storedResult', this.storedResult);
+        this.playSelectedContent(this.storedResult);
+        // this.headerEvents.emit({ name: 'voiceSearch', event: this.storedResult });
+      }, (error) => {
+        console.log('error detected', error);
+      });
+  }
+
+  playSelectedContent(searchData) {
+    VoiceSearchConstants.searchConstants.mappedContentId.forEach((data, index) => {
+      searchData.forEach(searchText => {
+        if (searchText.includes(data)) {
+          document.getElementById(index.toString()).click();
+        }
+      });
+    });
   }
 }

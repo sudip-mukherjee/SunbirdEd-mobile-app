@@ -1,63 +1,63 @@
 <ion-app>
 
   <app-application-header [headerConfig]="headerConfig" (headerEvents)="handleHeaderEvents($event);"
-    (sideMenuItemEvent)="menuItemAction($event)"></app-application-header>
+  (sideMenuItemEvent)="menuItemAction($event)"></app-application-header>
 
-  <ion-split-pane contentId="mainContent">
-    <ion-router-outlet *ngIf="toggleRouterOutlet" id="mainContent" main
-      [ngClass]="{'need-header-space':headerConfig?.showHeader, '':!headerConfig?.showHeader}"></ion-router-outlet>
-  </ion-split-pane>
-  <div id="backdrop"
-    (click)="$event.preventDefault(); $event.stopPropagation(); qrWalkthroughBackdropClicked(); showWalkthroughBackDrop = false"
-    [hidden]="!showWalkthroughBackDrop">
-    <ion-grid style="height: 100%" class="gridClass ion-text-center">
-      <ion-row style="height: 100%" align-items-end>
-        <ion-col style="padding-bottom: 7em; text-align: center">
-          <ion-row>
-            <ion-col>
-              <ion-row>
-                <div class="ion-text-center W100" style="font-size: 19px">{{'TAP_SCAN' | translate: {'%s': appName} }}
-                </div>
-              </ion-row>
-            </ion-col>
-          </ion-row>
-          <ion-row>
-            <ion-col style="padding-left: 50px; padding-right: 70px">
-              <ion-row>
-                <div class="ion-text-center W100">{{'COACH_SCREEN' | translate}}</div>
-              </ion-row>
-            </ion-col>
-          </ion-row>
-          <ion-row>
-            <ion-col>
-              <button class="sb-btn sb-btn-md sb-btn-outline-white text-uppercase" id="buttonColors"
-                (click)="onConfirmationClicked($event)">{{'GOT_IT' | translate}}</button>
-            </ion-col>
-          </ion-row>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
-  </div>
+<ion-split-pane contentId="mainContent">
+  <ion-router-outlet *ngIf="toggleRouterOutlet" id="mainContent" main
+    [ngClass]="{'need-header-space':headerConfig?.showHeader, '':!headerConfig?.showHeader}"></ion-router-outlet>
+</ion-split-pane>
+<div id="backdrop"
+  (click)="$event.preventDefault(); $event.stopPropagation(); qrWalkthroughBackdropClicked(); showWalkthroughBackDrop = false"
+  [hidden]="!showWalkthroughBackDrop">
+  <ion-grid style="height: 100%" class="gridClass ion-text-center">
+    <ion-row style="height: 100%" align-items-end>
+      <ion-col style="padding-bottom: 7em; text-align: center">
+        <ion-row>
+          <ion-col>
+            <ion-row>
+              <div class="ion-text-center W100" style="font-size: 19px">{{'TAP_SCAN' | translate: {'%s': appName} }}
+              </div>
+            </ion-row>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col style="padding-left: 50px; padding-right: 70px">
+            <ion-row>
+              <div class="ion-text-center W100">{{'COACH_SCREEN' | translate}}</div>
+            </ion-row>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col>
+            <button class="sb-btn sb-btn-md sb-btn-outline-white text-uppercase" id="buttonColors"
+              (click)="onConfirmationClicked($event)">{{'GOT_IT' | translate}}</button>
+          </ion-col>
+        </ion-row>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</div>
 
-  <div id="update-webview-container"
-  style="position: fixed;top: 0;left: 0;right: 0;bottom: 0;z-index: 10;background-color: rgba(0, 0, 0, 0.59);opacity: 1;display: none;">
-    <div id="update-webview-content" 
-      style="position: fixed;top: 0;left: 0;right: 0;bottom: 0;z-index: 11;width: 80%;height: 195px;background-color: #eee; margin: auto;">
-      <div style="height:195px;position: relative;">
-        <div>
-          <h3 
-            style="text-align: center;background-color: #024f9d; color: #fff;margin: 0;padding: 8px; font-size: 18px;">
-            {{'UPDATE_REQUIRED' | translate}}
-          </h3>
-        </div>
-        <div style="padding: 15px 0; font-size: 16px; color: #333;width:80%;margin: auto;">
-          <p style="margin: 0;">{{'WEBVIEW_UPDATE_TEXT' | translate}}</p>
-        </div>
-        <div style="position: absolute; width: 100%; bottom: 15px;text-align: center;">
-          <button (click)="openPlaystore()" style="color: #fff;background: #024f9d;padding: 10px;width: 80%;margin: auto;">{{'DOWNLOAD_NOW' | translate}}</button>
-        </div>
+<div id="update-webview-container"
+style="position: fixed;top: 0;left: 0;right: 0;bottom: 0;z-index: 10;background-color: rgba(0, 0, 0, 0.59);opacity: 1;display: none;">
+  <div id="update-webview-content" 
+    style="position: fixed;top: 0;left: 0;right: 0;bottom: 0;z-index: 11;width: 80%;height: 195px;background-color: #eee; margin: auto;">
+    <div style="height:195px;position: relative;">
+      <div>
+        <h3 
+          style="text-align: center;background-color: #024f9d; color: #fff;margin: 0;padding: 8px; font-size: 18px;">
+          {{'UPDATE_REQUIRED' | translate}}
+        </h3>
+      </div>
+      <div style="padding: 15px 0; font-size: 16px; color: #333;width:80%;margin: auto;">
+        <p style="margin: 0;">{{'WEBVIEW_UPDATE_TEXT' | translate}}</p>
+      </div>
+      <div style="position: absolute; width: 100%; bottom: 15px;text-align: center;">
+        <button (click)="openPlaystore()" style="color: #fff;background: #024f9d;padding: 10px;width: 80%;margin: auto;">{{'DOWNLOAD_NOW' | translate}}</button>
       </div>
     </div>
   </div>
-  
+</div>
+
 </ion-app>
