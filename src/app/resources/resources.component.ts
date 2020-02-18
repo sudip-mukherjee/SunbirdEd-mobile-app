@@ -1,3 +1,4 @@
+import { VoiceSearchConstants } from './../app.constant';
 import { PageFilterCallback } from './../page-filter/page-filter.page';
 import { Component, OnInit, AfterViewInit, Inject, NgZone, ViewChild, ViewEncapsulation } from '@angular/core';
 import { IonContent as ContentView, Events, ToastController, MenuController } from '@ionic/angular';
@@ -484,7 +485,7 @@ export class ResourcesComponent implements OnInit, AfterViewInit {
             this.storyAndWorksheets = newSections;
           }
           const sectionInfo = {};
-          for(let i = 0; i < this.storyAndWorksheets.length; i++) {
+          for (let i = 0; i < this.storyAndWorksheets.length; i++) {
             const sectionName = this.storyAndWorksheets[i].name,
               count = this.storyAndWorksheets[i].contents.length;
 
@@ -731,15 +732,28 @@ export class ResourcesComponent implements OnInit, AfterViewInit {
 
   async voiceSearch($event) {
     console.log('$event', $event);
-    const contentTypes = await this.formAndFrameworkUtilService.getSupportedContentFilterConfig(
-      ContentFilterConfig.NAME_LIBRARY);
-    this.router.navigate([RouterLinks.SEARCH], {
-      state: {
-        contentType: contentTypes,
-        source: PageId.LIBRARY,
-        searchTexts: $event.event
+    let searchQuery = '';
+    VoiceSearchConstants.searchConstants.subject.forEach(data => {
+      if ($event.event[0].includes(data)) {
+        searchQuery = searchQuery + data;
       }
     });
+
+    if (!searchQuery) {
+      (window as any).TTS.speak(`Can not find content with the given keyword`);
+      return;
+    } else {
+      const contentTypes = await this.formAndFrameworkUtilService.getSupportedContentFilterConfig(
+        ContentFilterConfig.NAME_LIBRARY);
+      this.router.navigate([RouterLinks.SEARCH], {
+        state: {
+          contentType: contentTypes,
+          source: PageId.LIBRARY,
+          searchTexts: searchQuery
+        }
+      });
+
+    }
   }
 
   getCategoryData() {

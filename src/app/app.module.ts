@@ -69,7 +69,6 @@ import { ExternalIdVerificationService } from '@app/services/externalid-verifica
 import { TextbookTocService } from '@app/app/collection-detail-etb/textbook-toc-service';
 
 import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 // AoT requires an exported function for factories
 export function translateHttpLoaderFactory(httpClient: HttpClient) {
   return new TranslateHttpLoader(httpClient, './assets/i18n/', '.json');
@@ -470,8 +469,7 @@ declare const buildconfigreader;
     ...sunbirdSdkServicesProvidersFactory(),
     { provide: ErrorHandler, useClass: CrashAnalyticsErrorLogger },
     { provide: APP_INITIALIZER, useFactory: sunbirdSdkFactory, deps: [], multi: true },
-    SpeechRecognition,
-    TextToSpeech
+    SpeechRecognition
   ],
   bootstrap: [AppComponent],
   schemas: [

@@ -7,10 +7,11 @@ import { Platform, AlertController, Events } from '@ionic/angular';
 import { ScreenOrientation } from '@ionic-native/screen-orientation/ngx';
 import { PlayerActionHandlerDelegate, HierarchyInfo, User } from './player-action-handler-delegate';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
-import { EventTopics, RouterLinks } from '../app.constant';
+import { EventTopics, RouterLinks, VoiceSearchConstants } from '../app.constant';
 import { Location } from '@angular/common';
 import { Subscription } from 'rxjs/Subscription';
 import { CourseService, Course } from 'sunbird-sdk';
+import { AppHeaderService } from '@app/services/app-header.service';
 
 @Component({
   selector: 'app-player',
@@ -22,6 +23,8 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
   backButtonSubscription: Subscription;
   course: Course;
   pauseSubscription: any;
+  headerObservable: any;
+  alert: any;
 
   @ViewChild('preview') previewElement: ElementRef;
   constructor(
@@ -36,7 +39,8 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
     private commonUtilService: CommonUtilService,
     private route: ActivatedRoute,
     private router: Router,
-    private location: Location
+    private location: Location,
+    private headerService: AppHeaderService
   ) {
     this.canvasPlayerService.handleAction();
 
@@ -51,7 +55,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
   }
 
   ngOnInit() {
-    this.pauseSubscription =  this.platform.pause.subscribe(() => {
+    this.pauseSubscription = this.platform.pause.subscribe(() => {
       var iframes = window.document.getElementsByTagName('iframe');
       if (iframes.length > 0) {
         iframes[0].contentWindow.postMessage('pause.youtube', '*');
@@ -59,6 +63,9 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
     });
   }
   ionViewWillEnter() {
+    this.headerObservable = this.headerService.headerEventEmitted$.subscribe(eventName => {
+      this.handleHeaderEvents(eventName);
+    });
     this.screenOrientation.lock(this.screenOrientation.ORIENTATIONS.LANDSCAPE);
     this.statusBar.hide();
 
@@ -86,10 +93,10 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
         this.previewElement.nativeElement.contentWindow['Media'] = window['Media'];
         this.previewElement.nativeElement.contentWindow['initializePreview'](this.config);
         this.previewElement.nativeElement.contentWindow.addEventListener('message', resp => {
-            console.log('Player Response', resp);
-            if (resp.data === 'renderer:question:submitscore') {
-                this.courseService.syncAssessmentEvents();
-            }
+          console.log('Player Response', resp);
+          if (resp.data === 'renderer:question:submitscore') {
+            this.courseService.syncAssessmentEvents();
+          }
         });
       }, 1000);
     };
@@ -101,6 +108,49 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
         this.closeIframe();
       }
     });
+  }
+
+  handleHeaderEvents($event) {
+    switch ($event.name) {
+      case 'voiceSearch-player':
+        this.toggleExitPopup($event.event);
+        break;
+      default:
+        break;
+    }
+  }
+  toggleExitPopup(event) {
+    // VoiceSearchConstants.searchConstants.navigationBackConstants.forEach((data, index) => {
+    //   event.forEach(searchText => {
+    //     if (searchText.includes(data)) {
+    //       this.showConfirm();
+    //     }
+    //   });
+    // });
+
+    // tslint:disable-next-line:prefer-for-of
+    for (let i = 0; i < event.length; i++) {
+      // tslint:disable-next-line:prefer-for-of
+      for (let j = 0; j < VoiceSearchConstants.searchConstants.navigationBackConstants.length; j++) {
+        if (event[i].includes(VoiceSearchConstants.searchConstants.navigationBackConstants[j])) {
+          this.showConfirm();
+          return;
+        }
+      }
+    }
+
+    // tslint:disable-next-line:prefer-for-of
+    for (let i = 0; i < event.length; i++) {
+      // tslint:disable-next-line:prefer-for-of
+      for (let j = 0; j < VoiceSearchConstants.searchConstants.confirmClose.length; j++) {
+        if (event[i].includes(VoiceSearchConstants.searchConstants.confirmClose[j])) {
+          this.alert.dismiss();
+
+          this.location.back();
+          return;
+        }
+      }
+    }
   }
 
   ionViewWillLeave() {
@@ -115,7 +165,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
     if (this.backButtonSubscription) {
       this.backButtonSubscription.unsubscribe();
     }
-    window.removeEventListener('renderer:question:submitscore', () => {});
+    window.removeEventListener('renderer:question:submitscore', () => { });
   }
 
   ngOnDestroy() {
@@ -141,7 +191,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
           this.navCtrl.remove(this.navCtrl.length() - 2);
         });
      */
-    this.router.navigate([RouterLinks.CONTENT_DETAILS , identifier], { state: { content, course: this.course } , replaceUrl: true, });
+    this.router.navigate([RouterLinks.CONTENT_DETAILS, identifier], { state: { content, course: this.course }, replaceUrl: true, });
   }
 
   /**
@@ -156,7 +206,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
    * This will close the player page and will fire some end telemetry events from the player
    */
   closeIframe() {
-    const stageId = this.previewElement.nativeElement.contentWindow['EkstepRendererAPI'].getCurrentStageId();
+    const stageId = this.previewElement.nativeElement.contentWindow['EkstepRendererAPI'].getCurrentStageId() || 'mock';
     try {
       this.previewElement.nativeElement.contentWindow['TelemetryService'].exit(stageId);
     } catch (err) {
@@ -180,7 +230,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
     this.previewElement.nativeElement.contentWindow['TelemetryService'].interact(
       'TOUCH', 'DEVICE_BACK_BTN', 'EXIT', { type: type, stageId: stageId });
 
-    const alert = await this.alertCtrl.create({
+    this.alert = await this.alertCtrl.create({
       header: this.commonUtilService.translateMessage('CONFIRM'),
       message: this.commonUtilService.translateMessage('CONTENT_PLAYER_EXIT_PERMISSION'),
       buttons: [
@@ -205,6 +255,6 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
         }
       ]
     });
-    await alert.present();
+    await this.alert.present();
   }
 }

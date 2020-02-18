@@ -106,9 +106,11 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   LibraryCardTypes = LibraryCardTypes;
   searchTexts: [];
   storedResult = [];
+  headerObservable: any;
 
   @ViewChild('contentView') contentView: IonContent;
   @Output() headerEvents = new EventEmitter();
+  @Output() myEvent = new EventEmitter();
   constructor(
     @Inject('CONTENT_SERVICE') private contentService: ContentService,
     @Inject('PAGE_ASSEMBLE_SERVICE') private pageService: PageAssembleService,
@@ -143,7 +145,12 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
 
     if (extras) {
       this.dialCode = extras.dialCode;
-      this.contentType = extras.contentType;
+      this.contentType =  [
+        ContentType.STORY,
+        ContentType.WORKSHEET,
+        ContentType.GAME,
+        ContentType.RESOURCE
+    ];
       this.corRelationList = extras.corRelation;
       this.source = extras.source;
       this.enrolledCourses = extras.enrolledCourses;
@@ -170,6 +177,19 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   ionViewWillEnter() {
     this.headerService.hideHeader();
     this.handleDeviceBackButton();
+    this.headerObservable = this.headerService.headerEventEmitted$.subscribe(eventName => {
+      this.handleHeaderEvents(eventName);
+    });
+  }
+
+  handleHeaderEvents($event) {
+    switch ($event.name) {
+      case 'voiceSearch-search':
+        this.playSelectedContent($event.event);
+        break;
+      default:
+        break;
+    }
   }
 
   ionViewDidEnter() {
@@ -439,7 +459,8 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
           corRelation: params.corRelation,
           isSingleContent: params.isSingleContent,
           onboarding: params.onboarding,
-          parentContent: params.parentContent
+          parentContent: params.parentContent,
+          playContentStatus: this.appGlobalService.getPlayContentStatus()
         }
       });
     }
@@ -1583,39 +1604,51 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   processSearchData(searchData) {
-    let searchQuery = '';
-    VoiceSearchConstants.searchConstants.subject.forEach(data => {
-      if (searchData[0].includes(data)) {
-        searchQuery = searchQuery + data;
-        this.searchKeywords = searchQuery;
-      }
-    });
-    console.log('searchQuery', searchQuery);
-    this.handleSearch(searchQuery);
-    (window as any).cordova.plugins.Keyboard.close();
+      console.log('searchQuery', searchData);
+      (window as any).TTS.speak(`showing result for ${searchData}`);
+      this.searchKeywords = searchData;
+      this.handleSearch(searchData);
+      (window as any).cordova.plugins.Keyboard.close();
   }
 
   startRecording() {
     // this.checkPermission();
-      this.speechRecognition.startListening().subscribe(matches => {
-        this.storedResult = matches;
-        this.changeDetectionRef.detectChanges();
-        console.log('subscription started');
-        console.log('this.storedResult', this.storedResult);
-        this.playSelectedContent(this.storedResult);
-        // this.headerEvents.emit({ name: 'voiceSearch', event: this.storedResult });
-      }, (error) => {
-        console.log('error detected', error);
-      });
+    this.speechRecognition.startListening().subscribe(matches => {
+      this.storedResult = matches;
+      this.changeDetectionRef.detectChanges();
+      console.log('subscription started');
+      console.log('this.storedResult', this.storedResult);
+      this.playSelectedContent(this.storedResult);
+    }, (error) => {
+      console.log('error detected', error);
+    });
   }
 
   playSelectedContent(searchData) {
-    VoiceSearchConstants.searchConstants.mappedContentId.forEach((data, index) => {
-      searchData.forEach(searchText => {
-        if (searchText.includes(data)) {
-          document.getElementById(index.toString()).click();
+    for (let i = 0; i < searchData.length; i++) {
+      // tslint:disable-next-line:prefer-for-of
+      for (let j = 0; j < VoiceSearchConstants.searchConstants.mappedContentId.length; j++) {
+        // if (VoiceSearchConstants.searchConstants.mappedContentId[i].includes(searchData[j])) {
+        //   document.getElementById(i.toString()).click();
+        // }
+        if (searchData[i].includes(VoiceSearchConstants.searchConstants.mappedContentId[j])) {
+          (window as any).TTS.speak(`opening selected content`);
+          document.getElementById(i.toString()).click();
+          return;
         }
-      });
-    });
+      }
+    }
+
+    // VoiceSearchConstants.searchConstants.mappedContentId.forEach((data, index) => {
+    //   searchData.forEach(searchText => {
+    //     if (searchText.includes(data)) {
+    //       // this.myEvent.emit({name: 'clickPlayButton', event: 'playContentEvent'});
+    //       // this.event.publish('clickPlayButton', 'some-values');
+    //       (window as any).TTS.speak(`playing ${data} content`);
+    //       document.getElementById(index.toString()).click();
+    //       return;
+    //     }
+    //   });
+    // });
   }
 }

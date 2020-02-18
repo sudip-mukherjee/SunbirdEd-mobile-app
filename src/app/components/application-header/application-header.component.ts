@@ -12,7 +12,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { NavigationExtras, Router, RouterLink } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
 @Component({
   selector: 'app-application-header',
@@ -61,8 +60,7 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
     private ngZone: NgZone,
     private telemetryGeneratorService: TelemetryGeneratorService,
     private activePageService: ActivePageService,
-    private speechRecognition: SpeechRecognition,
-    private textToSpeech: TextToSpeech
+    private speechRecognition: SpeechRecognition
   ) {
     this.setLanguageValue();
     this.events.subscribe('onAfterLanguageChange:update', (res) => {
@@ -257,8 +255,15 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
 
     // library `courses`
     this.eventName = this.activePageService.computePageId(this.router.url);
+    console.log(' this.activePageService.computePageId(this.router.url)',
+    this.activePageService.computePageId(this.router.url));
     console.log('this.eventName', this.eventName );
     // this.checkPermission();
+    if (this.eventName === 'library' || this.eventName === 'courses') {
+    (window as any).TTS.speak(`Say something to search in ${this.eventName} page`);
+    } else if (this.eventName === 'search') {
+      (window as any).TTS.speak(`say which content you want to play`);
+    }
     if (this.isPermissionAvailable) {
       this.speechRecognition.startListening().subscribe(matches => {
         this.storedResult = matches;

@@ -73,6 +73,8 @@ export class AppGlobalService implements OnDestroy {
     private isJoinTraningOnboarding: any;
     private _signinOnboardingLoader: any;
 
+    playContentStatus: boolean;
+
 
     constructor(
         @Inject('PROFILE_SERVICE') private profile: ProfileService,
@@ -125,6 +127,14 @@ export class AppGlobalService implements OnDestroy {
 
     setSelectedUser(selectedUser) {
         this.selectedUser = selectedUser;
+    }
+
+    setPlayContentStatus(playContentStatus) {
+        this.playContentStatus = playContentStatus;
+    }
+
+    getPlayContentStatus() {
+        return this.playContentStatus;
     }
 
     getNameForCodeInFramework(category, code) {

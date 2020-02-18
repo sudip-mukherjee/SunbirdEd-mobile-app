@@ -180,7 +180,7 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
     private contentPlayerHandler: ContentPlayerHandler,
     private childContentHandler: ChildContentHandler,
     private contentDeleteHandler: ContentDeleteHandler,
-    private loginHandlerService: LoginHandlerService,
+    private loginHandlerService: LoginHandlerService
   ) {
     this.subscribePlayEvent();
     this.checkDeviceAPILevel();
@@ -188,6 +188,7 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
     this.defaultAppIcon = 'assets/imgs/ic_launcher.png';
     this.defaultLicense = ContentConstants.DEFAULT_LICENSE;
     this.ratingHandler.resetRating();
+    this.autoPlayContent(this.router.getCurrentNavigation().extras.state.playContentStatus);
     this.route.queryParams.subscribe(params => {
       this.getNavParams();
     });
@@ -215,6 +216,7 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
       this.resultLength = extras.resultsSize;
       this.autoPlayQuizContent = extras.autoPlayQuizContent || false;
       this.checkLimitedContentSharingFlag(extras.content);
+      // this.autoPlayContent(extras.playContentStatus);
     }
   }
 
@@ -236,6 +238,10 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
       this.calculateAvailableUserCount();
     }
 
+    this.events.subscribe('clickPlayButton', (data) => {
+      console.log('dataaaaa', data);
+    });
+
     this.events.subscribe(EventTopics.PLAYER_CLOSED, (data) => {
       if (data.selectedUser) {
         if (!data.selectedUser['profileType']) {
@@ -250,6 +256,12 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
     });
   }
 
+  autoPlayContent(status) {
+    if (status) {
+      this.handleContentPlay(true);
+    }
+  }
+
   ngOnDestroy() {
     this.events.unsubscribe(EventTopics.PLAYER_CLOSED);
     this.events.unsubscribe(EventTopics.DEEPLINK_CONTENT_PAGE_OPEN);
@@ -259,6 +271,9 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
    * Ionic life cycle hook
    */
   ionViewWillEnter(): void {
+    this.headerObservable = this.headerService.headerEventEmitted$.subscribe(eventName => {
+      this.handleHeaderEvents(eventName);
+    });
     this.headerService.hideHeader();
 
     if (this.isResumedCourse && !this.contentPlayerHandler.isContentPlayerLaunched()) {
@@ -280,6 +295,16 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
     this.subscribeSdkEvent();
     this.findHierarchyOfContent();
     this.handleDeviceBackButton();
+  }
+
+  handleHeaderEvents($event) {
+    switch ($event.name) {
+      case 'voiceSearch-content-detail':
+        this.handleContentPlay(true);
+        break;
+      default:
+        break;
+    }
   }
 
   /**
@@ -819,6 +844,7 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
   }
 
   handleContentPlay(isStreaming) {
+    (window as any).TTS.speak(`playing the selected content `);
     if (this.limitedShareContentFlag) {
       if (!this.appGlobalService.isUserLoggedIn()) {
         this.promptToLogin();

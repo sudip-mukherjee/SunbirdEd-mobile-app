@@ -29,6 +29,7 @@ export enum Mode {
     PLAY = 'play'
 }
 export enum PageId {
+    PLAYER = 'player',
     SPLASH_SCREEN = 'splash',
     LOGIN = 'login',
     LOGOUT = 'logout',

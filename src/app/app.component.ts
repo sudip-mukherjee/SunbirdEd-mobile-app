@@ -40,7 +40,6 @@ import { RouterLinks } from './app.constant';
 import { TncUpdateHandlerService } from '@app/services/handlers/tnc-update-handler.service';
 import { NetworkAvailabilityToastService } from '@app/services/network-availability-toast/network-availability-toast.service';
 import { SpeechRecognition } from '@ionic-native/speech-recognition/ngx';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
 @Component({
   selector: 'app-root',
@@ -103,7 +102,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     private networkAvailability: NetworkAvailabilityToastService,
     private splashScreenService: SplashScreenService,
     private speechRecognition: SpeechRecognition,
-    private textToSpeech: TextToSpeech,
     private changeDetectionRef: ChangeDetectorRef,
   ) {
     this.telemetryAutoSync = this.telemetryService.autoSync;

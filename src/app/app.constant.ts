@@ -507,7 +507,15 @@ export class VoiceSearchConstants {
             'biology', 'mathematics', 'english', 'chemistry'
         ],
         mappedContentId: [
-            'first', 'second',  'third', 'fourth'
+            'first', 'second', 'third', 'fourth'
+        ],
+        navigationBackConstants: [
+            'go back', 'back', 'exit'
+        ],
+        confirmClose: [
+            'close', 'ok'
         ]
+
     };
 }
+

@@ -39,6 +39,10 @@ export class ActivePageService {
       pageId = PageId.COURSE_BATCHES;
     } else if (routeUrl.indexOf(RouterLinks.DISTRICT_MAPPING) !== -1) {
       pageId = PageId.DISTRICT_MAPPING;
+    } else if (routeUrl.indexOf(RouterLinks.SEARCH) !== -1) {
+      pageId = PageId.SEARCH;
+    } else if (routeUrl.indexOf(RouterLinks.PLAYER) !== -1) {
+      pageId = PageId.PLAYER;
     }
 
     return pageId;
