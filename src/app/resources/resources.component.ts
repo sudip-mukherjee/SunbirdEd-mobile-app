@@ -226,6 +226,7 @@ export class ResourcesComponent implements OnInit, AfterViewInit {
   }
 
   async ngOnInit() {
+    (window as any).TTS.speak(`Press       volume         button      twice,      to launch      Sunbird           Assistant`);
     this.getCurrentUser();
     this.appGlobalService.generateConfigInteractEvent(PageId.LIBRARY, this.isOnBoardingCardCompleted);
     await this.splaschreenDeeplinkActionHandlerDelegate.onAction('content').toPromise();

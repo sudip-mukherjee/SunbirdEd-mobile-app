@@ -39,7 +39,7 @@ import { Map } from '@app/app/telemetryutil';
 import { ConfirmAlertComponent } from '@app/app/components';
 import { AppGlobalService } from '@app/services/app-global-service.service';
 import { AppHeaderService } from '@app/services/app-header.service';
-import { ContentConstants, EventTopics, XwalkConstants, RouterLinks, ContentFilterConfig, PreferenceKey } from '@app/app/app.constant';
+import { ContentConstants, EventTopics, XwalkConstants, RouterLinks, ContentFilterConfig, PreferenceKey, VoiceSearchConstants } from '@app/app/app.constant';
 import { CourseUtilService } from '@app/services/course-util.service';
 import { UtilityService } from '@app/services/utility-service';
 import { TelemetryGeneratorService } from '@app/services/telemetry-generator.service';
@@ -188,7 +188,7 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
     this.defaultAppIcon = 'assets/imgs/ic_launcher.png';
     this.defaultLicense = ContentConstants.DEFAULT_LICENSE;
     this.ratingHandler.resetRating();
-    this.autoPlayContent(this.router.getCurrentNavigation().extras.state.playContentStatus);
+   //  this.autoPlayContent(this.router.getCurrentNavigation().extras.state.playContentStatus);
     this.route.queryParams.subscribe(params => {
       this.getNavParams();
     });
@@ -256,11 +256,25 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
     });
   }
 
-  autoPlayContent(status) {
-    if (status) {
-      this.handleContentPlay(true);
-    }
-  }
+  // autoPlayContent(status) {
+  //   if (status) {
+  //     this.handleContentPlay(true);
+  //   }
+
+  //   for (let i = 0; i < searchData.length; i++) {
+  //     // tslint:disable-next-line:prefer-for-of
+  //     for (let j = 0; j < VoiceSearchConstants.searchConstants.mappedContentId.length; j++) {
+  //       // if (VoiceSearchConstants.searchConstants.mappedContentId[i].includes(searchData[j])) {
+  //       //   document.getElementById(i.toString()).click();
+  //       // }
+  //       if (searchData[i].includes(VoiceSearchConstants.searchConstants.mappedContentId[j])) {
+  //         (window as any).TTS.speak(`opening selected content`);
+  //         document.getElementById(i.toString()).click();
+  //         return;
+  //       }
+  //     }
+  //   }
+  // }
 
   ngOnDestroy() {
     this.events.unsubscribe(EventTopics.PLAYER_CLOSED);
@@ -300,10 +314,29 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
   handleHeaderEvents($event) {
     switch ($event.name) {
       case 'voiceSearch-content-detail':
-        this.handleContentPlay(true);
+        this.playUserSelectedContent($event.event);
         break;
       default:
         break;
+    }
+  }
+
+  playUserSelectedContent(event) {
+    let  isPlayed  = false;
+    // tslint:disable-next-line:prefer-for-of
+    for (let i = 0; i < event.length; i++) {
+      // tslint:disable-next-line:prefer-for-of
+      for (let j = 0; j < VoiceSearchConstants.searchConstants.playContent.length; j++) {
+        if (event[i].includes(VoiceSearchConstants.searchConstants.playContent[j])) {
+          (window as any).TTS.speak(`playing content`);
+          isPlayed = true;
+          this.handleContentPlay(true);
+          return;
+        }
+      }
+    }
+    if (!isPlayed) {
+      (window as any).TTS.speak(`Can not get your command to play content`);
     }
   }
 
@@ -844,7 +877,6 @@ export class ContentDetailsPage implements OnInit, OnDestroy {
   }
 
   handleContentPlay(isStreaming) {
-    (window as any).TTS.speak(`playing the selected content `);
     if (this.limitedShareContentFlag) {
       if (!this.appGlobalService.isUserLoggedIn()) {
         this.promptToLogin();

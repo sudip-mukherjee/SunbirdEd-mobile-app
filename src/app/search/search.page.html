@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header id="toBeFocused">
   <ion-toolbar>
     <ion-input type="search" *ngIf="!dialCode" #searchInput dir="{{commonUtilService.getAppDirection()}}" class="search-input"
       (keyup.enter)="handleSearch()"
@@ -189,7 +189,7 @@
     </div>
   </div>
 
-  <div *ngIf="searchContentResult && searchContentResult.length">
+  <div  *ngIf="searchContentResult && searchContentResult.length">
       <div class="sb-search-history-entry sb-search-header-meta row">
         <div class="col">
           {{'SHOWING_RESULTS_FOR' | translate: {'%count': searchContentResult.length, '%query': searchKeywords} }}

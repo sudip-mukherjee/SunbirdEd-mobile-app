@@ -504,16 +504,22 @@ export class LibraryCardTypes {
 export class VoiceSearchConstants {
     public static readonly searchConstants = {
         subject: [
-            'biology', 'mathematics', 'english', 'chemistry'
+            'biology', 'mathematics', 'maths', 'English', 'chemistry', 'physics', 'environmental science', 'hindi', 'geography'
         ],
         mappedContentId: [
-            'first', 'second', 'third', 'fourth'
+            'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'
         ],
         navigationBackConstants: [
-            'go back', 'back', 'exit'
+            'go back'
         ],
         confirmClose: [
-            'close', 'ok'
+            'exit', 'ok'
+        ],
+        playContent: [
+            'play'
+        ],
+        dismissPopup: [
+            'cancel'
         ]
 
     };

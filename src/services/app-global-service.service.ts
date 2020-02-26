@@ -73,7 +73,7 @@ export class AppGlobalService implements OnDestroy {
     private isJoinTraningOnboarding: any;
     private _signinOnboardingLoader: any;
 
-    playContentStatus: boolean;
+    playContentStatus = false;
 
 
     constructor(
@@ -129,7 +129,10 @@ export class AppGlobalService implements OnDestroy {
         this.selectedUser = selectedUser;
     }
 
-    setPlayContentStatus(playContentStatus) {
+    setPlayContentStatus(playContentStatus, promtUser?) {
+        if (promtUser) {
+            (window as any).TTS.speak(`Are you sure, you want to stop playing, if yes, say go back.. or say continue `);
+        }
         this.playContentStatus = playContentStatus;
     }
 

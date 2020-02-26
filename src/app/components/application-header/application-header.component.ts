@@ -263,10 +263,20 @@ export class ApplicationHeaderComponent implements OnInit, OnDestroy {
     (window as any).TTS.speak(`Say something to search in ${this.eventName} page`);
     } else if (this.eventName === 'search') {
       (window as any).TTS.speak(`say which content you want to play`);
+    } else if (this.eventName === 'content-detail') {
+      (window as any).TTS.speak(`say play if you want to start playing the selected content`);
+    } else if (this.eventName === 'player') {
+     // (window as any).TTS.speak(`Would you like to stop ? , if yes, say Go back`);
+      if (!this.appGlobalService.getPlayContentStatus()) { // false -- true
+        this.appGlobalService.setPlayContentStatus(true, 'promptUser'); // -- set true
+        } else  {
+          this.appGlobalService.setPlayContentStatus(false);
+        }
     }
     if (this.isPermissionAvailable) {
       this.speechRecognition.startListening().subscribe(matches => {
         this.storedResult = matches;
+        console.log('this.storedResult>>>>>>', this.storedResult);
         this.changeDetectionRef.detectChanges();
         console.log('subscription started');
         this.headerEvents.emit({ name: 'voiceSearch-' + this.eventName, event: this.storedResult });

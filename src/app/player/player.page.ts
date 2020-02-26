@@ -120,14 +120,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
     }
   }
   toggleExitPopup(event) {
-    // VoiceSearchConstants.searchConstants.navigationBackConstants.forEach((data, index) => {
-    //   event.forEach(searchText => {
-    //     if (searchText.includes(data)) {
-    //       this.showConfirm();
-    //     }
-    //   });
-    // });
-
+/** if said exit */
     // tslint:disable-next-line:prefer-for-of
     for (let i = 0; i < event.length; i++) {
       // tslint:disable-next-line:prefer-for-of
@@ -138,15 +131,26 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
         }
       }
     }
-
+    /** if said ok  */
     // tslint:disable-next-line:prefer-for-of
     for (let i = 0; i < event.length; i++) {
       // tslint:disable-next-line:prefer-for-of
       for (let j = 0; j < VoiceSearchConstants.searchConstants.confirmClose.length; j++) {
         if (event[i].includes(VoiceSearchConstants.searchConstants.confirmClose[j])) {
           this.alert.dismiss();
-
           this.location.back();
+          return;
+        }
+      }
+    }
+
+    /** if said cancel */
+    // tslint:disable-next-line:prefer-for-of
+    for (let i = 0; i < event.length; i++) {
+      // tslint:disable-next-line:prefer-for-of
+      for (let j = 0; j < VoiceSearchConstants.searchConstants.dismissPopup.length; j++) {
+        if (event[i].includes(VoiceSearchConstants.searchConstants.dismissPopup[j])) {
+          this.alert.dismiss();
           return;
         }
       }
@@ -224,6 +228,7 @@ export class PlayerPage implements OnInit, OnDestroy, PlayerActionHandlerDelegat
    * This will show confirmation box while leaving the player, it will fire some telemetry events from the player.
    */
   async showConfirm() {
+    (window as any).TTS.speak(`say ok,          to get back to the content details page.      or say,      cancel `);
     const type = (this.previewElement.nativeElement.contentWindow['Renderer']
       && !this.previewElement.nativeElement.contentWindow['Renderer'].running) ? 'EXIT_APP' : 'EXIT_CONTENT';
     const stageId = this.previewElement.nativeElement.contentWindow['EkstepRendererAPI'].getCurrentStageId();

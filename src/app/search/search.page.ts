@@ -107,6 +107,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   searchTexts: [];
   storedResult = [];
   headerObservable: any;
+  isVoiceSearched = false;
 
   @ViewChild('contentView') contentView: IonContent;
   @Output() headerEvents = new EventEmitter();
@@ -185,6 +186,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   handleHeaderEvents($event) {
     switch ($event.name) {
       case 'voiceSearch-search':
+        this.isVoiceSearched = true;
         this.playSelectedContent($event.event);
         break;
       default:
@@ -801,6 +803,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
           this.responseData = response;
           if (response) {
             (window as any).cordova.plugins.Keyboard.close();
+            document.getElementById('toBeFocused').focus();
             this.addCorRelation(response.responseMessageId, 'API');
             this.searchContentResult = response.contentDataList;
             this.isEmptyResult = !this.searchContentResult || this.searchContentResult.length === 0;
@@ -825,6 +828,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
       }).catch(() => {
         this.zone.run(() => {
           (window as any).cordova.plugins.Keyboard.close();
+          document.getElementById('toBeFocused').focus();
           this.showLoader = false;
           if (!this.showLoader) {
             this.telemetryGeneratorService.generateEndSheenAnimationTelemetry(this.source);
@@ -1609,6 +1613,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
       this.searchKeywords = searchData;
       this.handleSearch(searchData);
       (window as any).cordova.plugins.Keyboard.close();
+      document.getElementById('toBeFocused').focus();
   }
 
   startRecording() {
@@ -1625,6 +1630,7 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   playSelectedContent(searchData) {
+    let isPlayed = false;
     for (let i = 0; i < searchData.length; i++) {
       // tslint:disable-next-line:prefer-for-of
       for (let j = 0; j < VoiceSearchConstants.searchConstants.mappedContentId.length; j++) {
@@ -1632,11 +1638,17 @@ export class SearchPage implements OnInit, AfterViewInit, OnDestroy {
         //   document.getElementById(i.toString()).click();
         // }
         if (searchData[i].includes(VoiceSearchConstants.searchConstants.mappedContentId[j])) {
-          (window as any).TTS.speak(`opening selected content`);
+          isPlayed = true;
           document.getElementById(i.toString()).click();
-          return;
         }
       }
+    }
+
+    if (!isPlayed) {
+      (window as any).TTS.speak(`can not find selected content`);
+    } else {
+      (window as any).TTS.speak(`opening selected content`);
+      return;
     }
 
     // VoiceSearchConstants.searchConstants.mappedContentId.forEach((data, index) => {
